@@ -8,6 +8,7 @@ ApolloClient is a constructor function that will help initialize the connection 
 InMemoryCache enables the Apollo Client instance to cache API response data so that we can perform requests more efficiently.
 
 createHttpLink allows us to control how the Apollo Client makes a request. Think of it like middleware for the outbound network requests. */
+import { setContext } from '@apollo/client/link/context'; //retrives token from localStorage
 
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -23,8 +24,18 @@ const httpLink = createHttpLink({
   uri: '/graphql', //proxy in package.json set up prefix for this
 });
 
-const client = new ApolloClient({
-  link: httpLink,
+const authLink = setContext((_, { headers }) => { //_ is placeholder for first parameter
+  const token = localStorage.getItem('id_token');
+  return {
+    headers: {
+      ...headers,
+      authorization: token ? `Bearer ${token}` : '',
+    },
+  };
+});
+
+const client = new ApolloClient({//combine the authLink and httpLink objects so that every request retrieves the token and sets the request headers before making the request to the API.
+  link: authLink.concat(httpLink),
   cache: new InMemoryCache(),
 });
 
